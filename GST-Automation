@@ -1,0 +1,43 @@
+<script>
+const scriptURL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const files = e.target.querySelectorAll("input[type=file]");
+  let payload = {};
+
+  for (let fileInput of files) {
+    const file = fileInput.files[0];
+    const data = await readExcel(file);
+
+    if (fileInput.name === "salesFile") payload.sales = data;
+    if (fileInput.name === "purchaseFile") payload.purchase = data;
+    if (fileInput.name === "gstr2bFile") payload.gstr2b = data;
+  }
+
+  fetch(scriptURL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(response => {
+    if (response.status === "SUCCESS") {
+      alert("Files uploaded successfully.\nGST Summary is ready in Google Sheet.");
+    } else {
+      alert("Error: " + response.message);
+    }
+  })
+  .catch(err => alert("Upload failed."));
+});
+
+// Excel Reader
+async function readExcel(file) {
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet, {header:1}).slice(1);
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
