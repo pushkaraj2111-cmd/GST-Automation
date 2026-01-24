@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GST Upload Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>GST Excel Upload & Reconciliation</h2>
+
+<label>Sales Register:</label>
+<input type="file" id="sales"><br><br>
+
+<label>Purchase Register:</label>
+<input type="file" id="purchase"><br><br>
+
+<label>GSTR-2B:</label>
+<input type="file" id="gstr2b"><br><br>
+
+<button onclick="uploadFiles()">Upload & Generate Summary</button>
+
+<p id="msg"></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
