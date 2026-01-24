@@ -1,0 +1,51 @@
+const scriptURL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+function readExcel(file, callback) {
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    callback(jsonData);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function uploadFiles() {
+  const salesFile = document.getElementById("sales").files[0];
+  const purchaseFile = document.getElementById("purchase").files[0];
+  const gstr2bFile = document.getElementById("gstr2b").files[0];
+
+  if (!salesFile || !purchaseFile || !gstr2bFile) {
+    alert("Please upload all 3 files");
+    return;
+  }
+
+  document.getElementById("msg").innerText = "Processing files...";
+
+  readExcel(salesFile, function (salesData) {
+    readExcel(purchaseFile, function (purchaseData) {
+      readExcel(gstr2bFile, function (gstr2bData) {
+
+        fetch(scriptURL, {
+          method: "POST",
+          body: JSON.stringify({
+            sales: salesData,
+            purchase: purchaseData,
+            gstr2b: gstr2bData
+          })
+        })
+        .then(res => res.json())
+        .then(response => {
+          document.getElementById("msg").innerText = "Files uploaded successfully!";
+        })
+        .catch(err => {
+          document.getElementById("msg").innerText = "Upload failed!";
+        });
+
+      });
+    });
+  });
+}
