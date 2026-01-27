@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GST ITC Reconciliation Tool</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f7fa;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 650px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #555;
+            font-size: 14px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 20px;
+        }
+
+        input[type="file"],
+        input[type="month"] {
+            margin-top: 6px;
+            padding: 6px;
+            width: 100%;
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 12px;
+            width: 100%;
+            background-color: #2e8b57;
+            color: #ffffff;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #256d45;
+        }
+
+        .note {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #777;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #1a5276;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>GST ITC Reconciliation</h2>
+    <p>
+        Purchase Register based ITC matching with GSTR-2B  
+        (Current month + previous unmatched ITC)
+    </p>
+
+    <!-- MONTH SELECTION -->
+    <label for="month">Return Month</label>
+    <input type="month" id="month">
+
+    <!-- PURCHASE REGISTER -->
+    <label for="purchase">
+        Purchase Register (Books)
+    </label>
+    <input type="file" id="purchase" accept=".xlsx,.xls">
+
+    <!-- GSTR 2B -->
+    <label for="gstr2b">
+        GSTR-2B (All Months / Current Month)
+    </label>
+    <input type="file" id="gstr2b" accept=".xlsx,.xls">
+
+    <!-- UPLOAD BUTTON -->
+    <button onclick="uploadData()">
+        Upload & Reconcile ITC
+    </button>
+
+    <div id="status"></div>
+
+    <div class="note">
+        <b>Notes:</b><br>
+        • Single GSTIN only<br>
+        • First row must contain column headers<br>
+        • Blocked ITC & RCM identified in Google Sheets logic<br>
+        • Cumulative unmatched ITC auto-tracked
+    </div>
+
+</div>
+
+<script>
+    function uploadData() {
+        document.getElementById("status").innerText =
+            "Files selected. Processing will be handled in Google Sheets.";
+    }
+</script>
+
+</body>
+</html>
