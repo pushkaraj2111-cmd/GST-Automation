@@ -1,43 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GST ITC Reconciliation</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+<h2>GST ITC Reconciliation Tool</h2>
+
+<p>Upload Files:</p>
+
+<label>1. Purchase Register</label>
+<input type="file" id="purchase"><br><br>
+
+<label>2. GSTR2B (Current Month)</label>
+<input type="file" id="gstr2b"><br><br>
+
+<label>3. ITC Not Taken Till Last Month</label>
+<input type="file" id="itcNotTaken"><br><br>
+
+<label>4. ITC in Books Not in 2B Till Last Month</label>
+<input type="file" id="booksNot2B"><br><br>
+
+<button onclick="processFiles()">Process & Download</button>
+
 <script>
-const scriptURL = "PASTE_YOUR_WEB_APP_URL_HERE";
 
-document.getElementById("uploadForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-
-  const files = e.target.querySelectorAll("input[type=file]");
-  let payload = {};
-
-  for (let fileInput of files) {
-    const file = fileInput.files[0];
-    const data = await readExcel(file);
-
-    if (fileInput.name === "salesFile") payload.sales = data;
-    if (fileInput.name === "purchaseFile") payload.purchase = data;
-    if (fileInput.name === "gstr2bFile") payload.gstr2b = data;
-  }
-
-  fetch(scriptURL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(response => {
-    if (response.status === "SUCCESS") {
-      alert("Files uploaded successfully.\nGST Summary is ready in Google Sheet.");
-    } else {
-      alert("Error: " + response.message);
-    }
-  })
-  .catch(err => alert("Upload failed."));
-});
-
-// Excel Reader
-async function readExcel(file) {
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data);
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(sheet, {header:1}).slice(1);
+async function readFile(file){
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws);
 }
+
+function key(row){
+    return row.GSTIN + "_" + row.InvoiceNo + "_" + row.ITCAmount;
+}
+
+async function processFiles(){
+
+    const purchase = await readFile(document.getElementById('purchase').files[0]);
+    const gstr2b = await readFile(document.getElementById('gstr2b').files[0]);
+    const itcNotTaken = await readFile(document.getElementById('itcNotTaken').files[0]);
+    const booksNot2B = await readFile(document.getElementById('booksNot2B').files[0]);
+
+    const gstrMap = new Map(gstr2b.map(r=>[key(r),r]));
+    const itcNotTakenMap = new Map(itcNotTaken.map(r=>[key(r),r]));
+    const booksNot2BMap = new Map(booksNot2B.map(r=>[key(r),r]));
+
+    let recon = [];
+    let newItcNotTaken = [];
+    let newBooksNot2B = [];
+
+    purchase.forEach(row=>{
+
+        let k = key(row);
+        let remark = "";
+
+        if(gstrMap.has(k)){
+            remark = "Matched in 2B";
+
+            if(itcNotTakenMap.has(k)){
+                remark += " | Previous ITC now taken";
+                itcNotTakenMap.delete(k);
+            }
+
+            if(booksNot2BMap.has(k)){
+                remark += " | Reflected in 2B this month";
+                booksNot2BMap.delete(k);
+            }
+
+        } else {
+            remark = "Not in 2B";
+
+            newBooksNot2B.push({...row,Remark:"Still not in 2B"});
+        }
+
+        recon.push({...row,Remark:remark});
+
+    });
+
+    // Remaining previous unmatched
+    itcNotTakenMap.forEach(v=>{
+        newItcNotTaken.push({...v,Remark:"Still not claimed"});
+    });
+
+    booksNot2BMap.forEach(v=>{
+        newBooksNot2B.push({...v,Remark:"Still not reflected"});
+    });
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recon), "Reconciliation");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(newItcNotTaken), "ITC Not Taken");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(newBooksNot2B), "Books Not in 2B");
+
+    XLSX.writeFile(wb,"GST_Reconciliation_Output.xlsx");
+
+}
+
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
+
